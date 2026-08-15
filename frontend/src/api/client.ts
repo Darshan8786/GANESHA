@@ -2,8 +2,10 @@ import axios from "axios";
 
 const TOKEN_KEY = "kgb_token";
 
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") || "";
+
 export const api = axios.create({
-  baseURL: "/api",
+  baseURL: API_BASE ? `${API_BASE}/api` : "/api",
   headers: { "Content-Type": "application/json" },
 });
 

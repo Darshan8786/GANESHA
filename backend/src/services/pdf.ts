@@ -3,8 +3,22 @@ import path from "path";
 import fs from "fs";
 import { env } from "../config/env";
 
-const fontPath = path.join(__dirname, "..", "..", "assets", "fonts", "segoeui.ttf");
-const fontBoldPath = path.join(__dirname, "..", "..", "assets", "fonts", "segoeuib.ttf");
+function resolveFontPath(fileName: string): string | null {
+  const candidates = [
+    path.join(__dirname, "..", "..", "assets", "fonts", fileName),
+    path.join(process.cwd(), "assets", "fonts", fileName),
+    path.join(process.cwd(), "backend", "assets", "fonts", fileName),
+    path.resolve(process.cwd(), "..", "backend", "assets", "fonts", fileName),
+  ];
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) return candidate;
+    } catch {
+      /* ignore */
+    }
+  }
+  return null;
+}
 
 export interface ReceiptPdfData {
   receiptNumber: string;
@@ -27,12 +41,14 @@ const ink = "#1f2937";
 const muted = "#6b7280";
 
 function setupFonts(doc: PDFKit.PDFDocument): void {
-  if (fs.existsSync(fontPath)) doc.registerFont("SVGB", fontPath);
-  if (fs.existsSync(fontBoldPath)) doc.registerFont("SVGB-Bold", fontBoldPath);
+  const fontPath = resolveFontPath("segoeui.ttf");
+  const fontBoldPath = resolveFontPath("segoeuib.ttf");
+  if (fontPath) doc.registerFont("SVGB", fontPath);
+  if (fontBoldPath) doc.registerFont("SVGB-Bold", fontBoldPath);
 }
 
 export function drawReceiptPage(doc: PDFKit.PDFDocument, data: ReceiptPdfData): void {
-  const hasUnicode = fs.existsSync(fontPath);
+  const hasUnicode = !!resolveFontPath("segoeui.ttf");
   const F = () => (hasUnicode ? "SVGB" : "Helvetica");
   const FB = () => (hasUnicode ? "SVGB-Bold" : "Helvetica-Bold");
 
