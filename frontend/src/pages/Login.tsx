@@ -36,18 +36,16 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-brand-green to-brand-greenlight relative overflow-hidden">
+    <div className="min-h-dvh flex items-center justify-center p-4 bg-gradient-to-b from-brand-green to-brand-greenlight relative overflow-hidden safe-top">
       <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, #f59e0b 0, transparent 30%), radial-gradient(circle at 80% 70%, #f59e0b 0, transparent 30%)" }} />
       <div className="w-full max-w-md relative fade-up">
         <div className="text-center mb-6">
-          <div className="h-16 w-16 mx-auto rounded-2xl bg-brand-gold flex items-center justify-center text-3xl font-black text-white shadow-lift">
-            S
-          </div>
-          <h1 className="mt-4 text-2xl font-bold text-white">SVGB · Siddi Vinayaka Geleyara Balaga</h1>
-          <p className="text-green-200 text-sm mt-1">Ganesh Chaturthi 2026 · Collection Management</p>
+          <img src="/ganesha-banner.jpg" alt="Ganesh" className="float h-28 w-28 mx-auto rounded-2xl object-cover frame-gold" />
+          <h1 className="mt-5 text-2xl font-bold text-white emboss-light">SVGB · Siddi Vinayaka Geleyara Balaga</h1>
+          <p className="text-amber-200 text-sm mt-1 font-medium">Ganesh Chaturthi 2026 · Collection Management</p>
         </div>
 
-        <form className="card p-6 sm:p-8" onSubmit={onSubmit}>
+        <form className="card card-strong p-6 sm:p-8" onSubmit={onSubmit}>
           <h2 className="text-lg font-bold text-gray-900 mb-1">Administrator sign in</h2>
           <p className="text-xs text-gray-500 mb-6">This application is restricted to the SVGB administrator.</p>
 

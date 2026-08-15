@@ -26,8 +26,15 @@ export async function dashboard(req: Request, res: Response): Promise<void> {
         { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
       ]),
       Expense.aggregate([
-        { $match: { isDeleted: false, status: { $ne: "REJECTED" } } },
-        { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
+        {
+          $match: {
+            isDeleted: false,
+            status: { $ne: "REJECTED" },
+            date: { $gte: new Date(year, 0, 1), $lt: new Date(year + 1, 0, 1) },
+          },
+        },
+        { $group: { _id: "$category", cost: { $max: "$amount" }, given: { $sum: { $ifNull: ["$advance", 0] } } } },
+        { $group: { _id: null, cost: { $sum: "$cost" }, given: { $sum: "$given" }, count: { $sum: 1 } } },
       ]),
       Donation.aggregate([
         { $match: { isCancelled: false, paymentStatus: "PENDING", ...yearRange } },
@@ -39,16 +46,61 @@ export async function dashboard(req: Request, res: Response): Promise<void> {
       ]),
     ]);
 
-    const [todayColl, todayExp] = await Promise.all([
+    const [todayColl, todayExp, dailyAgg] = await Promise.all([
       Donation.aggregate([
         { $match: { isCancelled: false, paymentStatus: "PAID", collectedAt: { $gte: today, ...(yearRange.collectedAt as Record<string, unknown>) } } },
         { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
       ]),
       Expense.aggregate([
-        { $match: { isDeleted: false, status: { $ne: "REJECTED" }, date: { $gte: today } } },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
+        {
+          $match: {
+            isDeleted: false,
+            status: { $ne: "REJECTED" },
+            date: { $gte: today, $lt: new Date(year + 1, 0, 1) },
+          },
+        },
+        { $group: { _id: null, given: { $sum: { $ifNull: ["$advance", 0] } } } },
+      ]),
+      Donation.aggregate([
+        {
+          $match: {
+            isCancelled: false,
+            paymentStatus: "PAID",
+            collectedAt: {
+              $gte: new Date(today.getTime() - 6 * 86400000),
+              $lt: new Date(year + 1, 0, 1),
+            },
+          },
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$collectedAt" } },
+            cash: { $sum: { $cond: [{ $eq: ["$paymentMode", "CASH"] }, "$amount", 0] } },
+            upi: { $sum: { $cond: [{ $eq: ["$paymentMode", "UPI"] }, "$amount", 0] } },
+            bank: { $sum: { $cond: [{ $eq: ["$paymentMode", "BANK_TRANSFER"] }, "$amount", 0] } },
+            total: { $sum: "$amount" },
+            count: { $sum: 1 },
+          },
+        },
       ]),
     ]);
+
+    const dailyMap = new Map(dailyAgg.map((d) => [d._id as string, d]));
+    const dailyCollection: { date: string; cash: number; upi: number; bank: number; total: number; count: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today.getTime() - i * 86400000);
+      const p = (n: number) => String(n).padStart(2, "0");
+      const key = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+      const row = dailyMap.get(key);
+      dailyCollection.push({
+        date: key,
+        cash: row?.cash || 0,
+        upi: row?.upi || 0,
+        bank: row?.bank || 0,
+        total: row?.total || 0,
+        count: row?.count || 0,
+      });
+    }
 
     const [totalHouses, totalShops, totalReceipts, totalDonors, totalCollectors, houseVsShop] = await Promise.all([
       House.countDocuments(),
@@ -68,7 +120,9 @@ export async function dashboard(req: Request, res: Response): Promise<void> {
     const collectedShops = await Shop.countDocuments({ status: "COLLECTED" });
 
     const totalCollection = collectionAgg[0]?.total || 0;
-    const totalExpenses = expenseAgg[0]?.total || 0;
+    const givenOut = expenseAgg[0]?.given || 0;
+    const expenseCost = expenseAgg[0]?.cost || 0;
+    const expensePending = Math.max(0, expenseCost - givenOut);
     const donorTypeTotals: Record<string, { total: number; count: number }> = {};
     for (const row of houseVsShop) {
       donorTypeTotals[row._id] = { total: row.total, count: row.count };
@@ -87,11 +141,15 @@ export async function dashboard(req: Request, res: Response): Promise<void> {
       bankCollection: paymentModeTotals["BANK_TRANSFER"] || 0,
       pendingCollection: pendingAgg[0]?.total || 0,
       pendingCount: pendingAgg[0]?.count || 0,
-      totalExpenses,
-      balance: totalCollection - totalExpenses,
+      totalExpenses: givenOut,
+      givenOut,
+      expenseCost,
+      expensePending,
+      balance: totalCollection - givenOut,
       todayCollection: todayColl[0]?.total || 0,
       todayCollectionsCount: todayColl[0]?.count || 0,
-      todayExpenses: todayExp[0]?.total || 0,
+      todayExpenses: todayExp[0]?.given || 0,
+      dailyCollection,
       totalDonors,
       totalReceipts,
       totalHouses,

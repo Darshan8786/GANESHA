@@ -8,7 +8,7 @@ export interface IExpense {
   amount: number;
   date: Date;
   paymentMode: PaymentMode;
-  advance?: boolean;
+  advance?: number;
   vendor?: string;
   billNumber?: string;
   billAttachment?: string;
@@ -29,7 +29,7 @@ const expenseSchema = new Schema<IExpense>(
     amount: { type: Number, required: true, min: 0 },
     date: { type: Date, default: Date.now },
     paymentMode: { type: String, enum: Object.values(PaymentMode), default: PaymentMode.CASH },
-    advance: { type: Boolean, default: false },
+    advance: { type: Number, default: 0, min: 0 },
     vendor: { type: String, trim: true },
     billNumber: { type: String, trim: true },
     billAttachment: { type: String },

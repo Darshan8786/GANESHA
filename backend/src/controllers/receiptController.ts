@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { Receipt } from "../models/Receipt";
 import { Donation } from "../models/Donation";
-import { buildReceiptPdf } from "../services/pdf";
+import { buildReceiptPdf, buildReceiptsPdf, ReceiptPdfData } from "../services/pdf";
 import { buildVerifyUrl } from "../services/qr";
 import { auditLog } from "../utils/audit";
 import { env } from "../config/env";
@@ -151,21 +151,63 @@ export async function downloadReceiptPdf(req: Request, res: Response): Promise<v
       return;
     }
     const d = new Date(receipt.issuedAt);
-    const doc = buildReceiptPdf({
-      receiptNumber: receipt.receiptNumber,
-      date: d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
-      time: d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-      devoteeName: receipt.devoteeName,
-      phone: receipt.phone,
-      address: receipt.address,
-      donorType: receipt.donorType,
-      collectorName: (receipt.collector as { name?: string })?.name || "",
-      paymentMode: receipt.paymentMode,
-      amount: receipt.amount,
-      qrDataUrl: receipt.qrDataUrl,
-    });
+    const doc = buildReceiptPdf(toReceiptPdfData(receipt, d));
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${receipt.receiptNumber}.pdf"`);
+    doc.pipe(res);
+    doc.end();
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+}
+
+interface ReceiptRow {
+  receiptNumber?: string;
+  devoteeName?: string;
+  amount?: number;
+  issuedAt?: string | Date;
+  paymentMode?: string;
+  phone?: string;
+  address?: string;
+  donorType?: string;
+  collector?: { name?: string } | unknown;
+  qrDataUrl?: string;
+}
+
+function toReceiptPdfData(receipt: ReceiptRow, d: Date): ReceiptPdfData {
+  return {
+    receiptNumber: String(receipt.receiptNumber || ""),
+    date: d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+    time: d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+    devoteeName: String(receipt.devoteeName || ""),
+    phone: receipt.phone,
+    address: receipt.address,
+    donorType: String(receipt.donorType || ""),
+    collectorName: typeof receipt.collector === "object" && receipt.collector !== null ? (receipt.collector as { name?: string }).name || "" : "",
+    paymentMode: receipt.paymentMode || "CASH",
+    amount: Number(receipt.amount || 0),
+    qrDataUrl: receipt.qrDataUrl,
+  };
+}
+
+export async function batchReceiptPdf(req: Request, res: Response): Promise<void> {
+  try {
+    const ids: string[] = (req.body?.ids || []).filter((id: unknown): id is string => typeof id === "string");
+    if (!ids.length) {
+      res.status(400).json({ message: "No receipts selected" });
+      return;
+    }
+    const receipts = await Receipt.find({ _id: { $in: ids }, isCancelled: false })
+      .populate("collector", "name")
+      .lean();
+    if (!receipts.length) {
+      res.status(404).json({ message: "No valid receipts found" });
+      return;
+    }
+    const items = receipts.map((r) => toReceiptPdfData(r, new Date(r.issuedAt)));
+    const doc = buildReceiptsPdf(items);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="SVGB_Receipts_${Date.now()}.pdf"`);
     doc.pipe(res);
     doc.end();
   } catch (err) {

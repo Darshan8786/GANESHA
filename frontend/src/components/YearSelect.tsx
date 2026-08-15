@@ -12,17 +12,20 @@ export function YearSelect({ value, onChange }: Props) {
 
   useEffect(() => {
     let alive = true;
+    const build = (dataYears: number[]) => {
+      const list = new Set<number>();
+      for (let y = 2020; y <= 2050; y++) list.add(y);
+      for (const y of dataYears) list.add(y);
+      if (!list.has(value)) list.add(value);
+      if (alive) setYears([...list].sort((a, b) => b - a));
+    };
     api
       .get("/receipts/years")
       .then((res) => {
         const list: number[] = Array.isArray(res.data.years) ? res.data.years : [];
-        if (!list.includes(value)) list.push(value);
-        list.sort((a, b) => b - a);
-        if (alive) setYears(list);
+        build(list);
       })
-      .catch(() => {
-        if (alive) setYears([value]);
-      });
+      .catch(() => build([]));
     return () => {
       alive = false;
     };

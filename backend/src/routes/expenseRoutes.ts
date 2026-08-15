@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { listExpenses, getExpense, createExpense, updateExpense, reviewExpense, softDeleteExpense } from "../controllers/expenseController";
+import { listExpenses, getExpense, createExpense, updateExpense, reviewExpense, softDeleteExpense, deleteExpensesByItem } from "../controllers/expenseController";
 import { protect, authorize } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { expenseSchema, expenseStatusSchema } from "../schemas";
@@ -15,5 +15,6 @@ router.post("/", authorize(UserRole.SUPER_ADMIN, UserRole.FINANCE_ADMIN), valida
 router.put("/:id", authorize(UserRole.SUPER_ADMIN, UserRole.FINANCE_ADMIN), validate(expenseSchema.partial()), updateExpense);
 router.patch("/:id/review", authorize(UserRole.SUPER_ADMIN, UserRole.FINANCE_ADMIN), validate(expenseStatusSchema), reviewExpense);
 router.patch("/:id/delete", authorize(UserRole.SUPER_ADMIN, UserRole.FINANCE_ADMIN), softDeleteExpense);
+router.delete("/by-item", authorize(UserRole.SUPER_ADMIN, UserRole.FINANCE_ADMIN), deleteExpensesByItem);
 
 export default router;

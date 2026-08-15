@@ -113,7 +113,7 @@ export const expenseSchema = z.object({
   amount: z.number().min(1, "Amount must be greater than 0"),
   date: z.string().optional().nullable(),
   paymentMode: paymentModeEnum.optional().default(PaymentMode.CASH),
-  advance: z.boolean().optional().default(false),
+  advance: z.number().min(0).optional().default(0),
   vendor: z.string().optional().nullable(),
   billNumber: z.string().optional().nullable(),
   billAttachment: z.string().optional().nullable(),

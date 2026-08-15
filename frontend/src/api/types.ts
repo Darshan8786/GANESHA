@@ -119,13 +119,27 @@ export interface Expense {
   amount: number;
   date: string;
   paymentMode: PaymentMode;
-  advance?: boolean;
+  advance?: number;
   vendor?: string;
   billNumber?: string;
   billAttachment?: string;
   addedBy?: { _id: string; name: string } | string;
   approvedBy?: { _id: string; name: string } | string | null;
   status: "PENDING" | "APPROVED" | "REJECTED";
+}
+
+export interface AmountGivenItem {
+  item: string;
+  total: number;
+  advance: number;
+  pending: number;
+  count: number;
+}
+
+export interface AmountGivenReport {
+  year: number;
+  data: AmountGivenItem[];
+  totals: { total: number; advance: number; pending: number };
 }
 
 export interface CashSettlement {
@@ -164,10 +178,14 @@ export interface DashboardData {
   totalCollection: number;
   totalDonations: number;
   totalExpenses: number;
+  givenOut: number;
+  expenseCost: number;
+  expensePending: number;
   balance: number;
   todayCollection: number;
   todayCollectionsCount: number;
   todayExpenses: number;
+  dailyCollection: { date: string; cash: number; upi: number; bank: number; total: number; count: number }[];
   totalDonors: number;
   totalReceipts: number;
   totalHouses: number;

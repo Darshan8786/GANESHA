@@ -11,6 +11,9 @@ import {
   finalReport,
   exportCsv,
   exportCollectionLogExcel,
+  amountGivenReport,
+  exportAmountGivenExcel,
+  exportAmountGivenPdf,
 } from "../controllers/reportController";
 import { protect, authorize } from "../middleware/auth";
 import { UserRole } from "../constants";
@@ -30,6 +33,9 @@ router.get("/expenses", expensesByCategory);
 router.get("/income-expense", incomeVsExpense);
 router.get("/settlements", settlementReport);
 router.get("/final", finalReport);
+router.get("/amount-given", amountGivenReport);
+router.get("/excel/amount-given", exportAmountGivenExcel);
+router.get("/pdf/amount-given", exportAmountGivenPdf);
 router.get("/excel/collection-log", exportCollectionLogExcel);
 router.get("/export/:type", exportCsv);
 

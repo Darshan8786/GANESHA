@@ -44,20 +44,15 @@ export async function listExpenses(req: Request<never, never, never, ListQuery>,
       .lean();
     const totals = await Expense.aggregate([
       { $match: { ...query, status: { $ne: ExpenseStatus.REJECTED } } },
-      {
-        $group: {
-          _id: null,
-          totalAmount: { $sum: "$amount" },
-          advanceAmount: { $sum: { $cond: ["$advance", "$amount", 0] } },
-        },
-      },
+      { $group: { _id: "$category", cost: { $max: "$amount" }, given: { $sum: { $ifNull: ["$advance", 0] } } } },
+      { $group: { _id: null, cost: { $sum: "$cost" }, given: { $sum: "$given" } } },
     ]);
     res.json({
       data: docs,
       total,
       page: Number(page),
       limit: Number(limit),
-      totals: { totalAmount: totals[0]?.totalAmount || 0, advanceAmount: totals[0]?.advanceAmount || 0 },
+      totals: { totalAmount: totals[0]?.given || 0, advanceAmount: totals[0]?.given || 0, costAmount: totals[0]?.cost || 0 },
     });
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
@@ -171,6 +166,38 @@ export async function softDeleteExpense(req: Request, res: Response): Promise<vo
       ip: req.ip,
     });
     res.json({ message: "Expense removed" });
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+}
+
+export async function deleteExpensesByItem(req: Request, res: Response): Promise<void> {
+  try {
+    const category = typeof req.query.category === "string" ? req.query.category : undefined;
+    const yearQ = typeof req.query.year === "string" ? req.query.year : undefined;
+    if (!category || !yearQ) {
+      res.status(400).json({ message: "category and year are required" });
+      return;
+    }
+    const y = Number(yearQ);
+    const match = {
+      isDeleted: false,
+      category,
+      date: { $gte: new Date(y, 0, 1), $lt: new Date(y + 1, 0, 1) },
+    };
+    const updated = await Expense.updateMany(match, {
+      $set: { isDeleted: true, deletedAt: new Date(), deletedBy: req.user?._id as never },
+    });
+    await auditLog({
+      user: req.user?._id as never,
+      userName: req.user?.name,
+      action: "EXPENSE_DELETED",
+      recordType: "Expense",
+      recordId: category,
+      details: { category, year: y, count: updated.modifiedCount },
+      ip: req.ip,
+    });
+    res.json({ message: "Item removed", count: updated.modifiedCount });
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
   }

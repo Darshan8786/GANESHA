@@ -57,7 +57,7 @@ export function StatCard({
   };
   return (
     <Card className="flex items-center gap-4">
-      <div className={`h-12 w-12 shrink-0 rounded-xl flex items-center justify-center ${accents[accent]}`}>{icon}</div>
+      <div className={`chip-3d h-12 w-12 shrink-0 rounded-xl flex items-center justify-center ${accents[accent]}`}>{icon}</div>
       <div className="min-w-0">
         <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</div>
         <div className="text-2xl font-bold text-gray-900 truncate">{value}</div>
@@ -70,10 +70,15 @@ export function StatCard({
 export function ProgressBar({ percent, className = "" }: { percent: number; className?: string }) {
   const pct = Math.max(0, Math.min(100, percent));
   return (
-    <div className={`h-2.5 w-full rounded-full bg-gray-200 overflow-hidden ${className}`}>
+    <div className={`h-2.5 w-full rounded-full overflow-hidden ${className}`} style={{ boxShadow: "inset 0 2px 3px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.7)" }}>
       <div
-        className="h-full rounded-full bg-brand-green transition-all duration-500"
-        style={{ width: `${pct}%` }}
+        className="h-full rounded-full"
+        style={{
+          width: `${pct}%`,
+          backgroundImage: "linear-gradient(180deg, #22c55e 0%, #16a34a 60%, #15803d 100%)",
+          boxShadow: "inset 0 2px 3px rgba(255,255,255,0.4), 0 -1px 2px rgba(0,0,0,0.25)",
+          transition: "width 0.5s ease",
+        }}
       />
     </div>
   );
@@ -138,11 +143,12 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={onClose}>
       <div
-        className={`w-full ${wide ? "max-w-3xl" : "max-w-md"} max-h-[92vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-2xl shadow-lift fade-up`}
+        className={`w-full ${wide ? "max-w-3xl" : "max-w-md"} max-h-[92vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-2xl shadow-lift fade-up safe-bottom`}
+        style={{ boxShadow: "0 -10px 40px -12px rgba(0,0,0,0.35), 0 20px 50px -20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.9)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between rounded-t-2xl z-10">
-          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+        <div className="sticky top-0 bg-white border-b border-amber-100 px-5 py-4 flex items-center justify-between rounded-t-2xl z-10" style={{ backgroundImage: "linear-gradient(180deg, #ffffff 0%, #fdf9ec 100%)", boxShadow: "inset 0 -1px 0 rgba(217,119,6,0.18)" }}>
+          <h3 className="text-lg font-bold text-gray-900 emboss">{title}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
             <X size={20} />
           </button>
