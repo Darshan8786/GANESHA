@@ -2,7 +2,7 @@
   "name": "svgb-backend",
   "version": "1.0.0",
   "description": "Ganesha Chaturthi Door-to-Door Collection Management System - Backend",
-  "main": "dist/server.js",
+  "main": "src/app.ts",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",

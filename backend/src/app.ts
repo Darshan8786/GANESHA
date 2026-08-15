@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { env } from "./config/env";
+import { connectDB } from "./config/db";
 import { notFound, errorHandler } from "./middleware/error";
 
 import authRoutes from "./routes/authRoutes";
@@ -22,6 +23,18 @@ const app = express();
 
 app.use(cors({ origin: env.clientUrl, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
+
+// Lazy DB connect for serverless (mongoose buffers queries until connected).
+let dbStarted = false;
+app.use((_req, _res, next) => {
+  if (!dbStarted) {
+    dbStarted = true;
+    connectDB().catch((err) => {
+      console.error("[db] connect error:", err instanceof Error ? err.message : err);
+    });
+  }
+  next();
+});
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "svgb-backend", time: new Date().toISOString() });
@@ -46,3 +59,4 @@ app.use(notFound);
 app.use(errorHandler);
 
 export { app };
+export default app;
