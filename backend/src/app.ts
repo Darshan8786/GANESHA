@@ -21,7 +21,12 @@ import publicRoutes from "./routes/publicRoutes";
 
 const app = express();
 
-app.use(cors({ origin: env.clientUrl, credentials: true }));
+const clientOrigins = (env.clientUrl || "http://localhost:5173")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+app.use(cors({ origin: clientOrigins, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 
 // Lazy DB connect for serverless (mongoose buffers queries until connected).
